@@ -2,7 +2,7 @@
 name = "osmanthus"
 version = "0.0.1"
 edition = "2021"
-license = "gpl-3-0"
+license = "GPL-3.0-or-later"
 description = "Find And Automatically Format Time Text From The String"
 authors = ["Ziiyoo"]
 
