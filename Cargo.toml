@@ -8,7 +8,7 @@ authors = ["ziiyoo"]
 repository = "https://github.com/ziiyoo/osmanthus"
 keywords = ["format", "time", "format_time", "time_format", "time_text"]
 categories = ["date-and-time", "value-formatting", "parsing"]
-documentation = "#"
+documentation = "https://osmanthus.open.source.seaxii.com"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
