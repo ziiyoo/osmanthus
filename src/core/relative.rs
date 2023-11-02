@@ -6,6 +6,15 @@ use crate::core::interfaces::{Parse};
 use crate::core::corpus::{get_offset_local_utc, unitize_relative_text};
 use crate::utils::{create_datetime, create_timestamp, eliminate_noise, split_with_numeric, str_convert};
 
+const MAX_SECTION_LEN_TRUSTED: usize = 5;
+const MAX_TEXT_LEN_TRUSTED: usize = 12;
+const MAX_NUMBER_MONTH: i64 = 12;
+const MAX_NUMBER_DAY: i64 = 31;
+const MAX_NUMBER_WEEK: i64 = 7;
+const MAX_NUMBER_HOURS: i64 = 24;
+const MAX_NUMBER_MINUTES: i64 = 60;
+const MAX_NUMBER_SECONDS: i64 = 60;
+
 impl Parse for ParseRelative{
     fn parse(&mut self, text: &str) -> Result{
         let mut r = self.work(text);
@@ -41,12 +50,12 @@ impl ParseRelative{
         // 切分
         let section: Vec<String> = split_with_numeric(item);
         // 元素越多可信度越低
-        if section.len() >= 5{
+        if section.len() >= MAX_SECTION_LEN_TRUSTED{
             return data
         }
         let numeric = self.search_numeric(&section);
         for (index, item) in section.iter().enumerate() {
-            if self.param.strict && item.chars().count() > 12{
+            if self.param.strict && item.chars().count() > MAX_TEXT_LEN_TRUSTED{
                 continue
             }
             let result_relative_text = unitize_relative_text(item.as_str());
@@ -83,7 +92,7 @@ impl ParseRelative{
                 return None
             }
             "month ago" =>{
-                if number > 12{
+                if number > MAX_NUMBER_MONTH{
                     return None
                 }
                 let date = datetime.date();
@@ -94,31 +103,31 @@ impl ParseRelative{
                 return None
             }
             "week ago" =>{
-                if number > 7{
+                if number > MAX_NUMBER_WEEK{
                     return None
                 }
                 return Some(datetime - Duration::weeks(number))
             }
             "day ago" =>{
-                if number > 31{
+                if number > MAX_NUMBER_DAY{
                     return None
                 }
                 return Some(datetime - Duration::days(number))
             }
             "hour ago" =>{
-                if number > 24{
+                if number > MAX_NUMBER_HOURS{
                     return None
                 }
                 return Some(datetime - Duration::hours(number))
             }
             "minute ago" =>{
-                if number > 60{
+                if number > MAX_NUMBER_MINUTES{
                     return None
                 }
                 return Some(datetime - Duration::minutes(number))
             }
             "second ago" =>{
-                if number > 3600{
+                if number > MAX_NUMBER_SECONDS*MAX_NUMBER_SECONDS{
                     return None
                 }
                 return Some(datetime - Duration::seconds(number))
@@ -132,7 +141,7 @@ impl ParseRelative{
         let mut data:HashMap<usize, i64> = HashMap::new();
         for (index, item) in section.iter().enumerate() {
             if let Some(number) = str_convert(item.as_str()){
-                if number <1 || number > 3600{
+                if number <1 || number > (MAX_NUMBER_SECONDS*MAX_NUMBER_SECONDS) as i32{
                     continue
                 }
                 data.insert(index, number as i64);

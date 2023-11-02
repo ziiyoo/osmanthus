@@ -2,14 +2,22 @@ use chrono::Duration;
 use chrono::prelude::*;
 use crate::bind::*;
 use crate::core::interfaces::{Parse};
-use crate::core::corpus::{unitize_date_text, search_meridian, unitize_month_numeric,
-                          get_offset_local_utc, unitize_spacial_express_time, search_era_japan,
-                          search_with_utc_pattern, search_dubious_date};
+use crate::core::corpus::{unitize_date_text, search_meridian, unitize_month_numeric, get_offset_local_utc, unitize_spacial_express_time, search_era_japan, search_with_utc_pattern, search_dubious_date, unitize_timezone_with_text};
 use crate::utils::{eliminate_noise, unitize_text, split_with_numeric,
                    section_with_space, search_offset_with_text, is_number,
                    create_datetime, create_timestamp, str_convert,
                    eliminate_symbol_point, tokenize, reorder_text_meridian};
 
+const MAX_NUMBER_MONTH: u32 = 12;
+const MAX_NUMBER_DAY: u32 = 31;
+const MAX_NUMBER_HOURS: u32 = 24;
+const MAX_NUMBER_MINUTES: u32 = 60;
+const MAX_NUMBER_SECONDS: u32 = 60;
+const MIN_NUMBER_YEAR: u32 = 1970;
+const MAX_NUMBER_YEAR: u32 = 9999;
+const MIN_NUMBER_YEAR_THAI: i32 = 2513;  // 泰历相对于公历多 543 年因此最小的泰历时间: 1970 + 543
+const DIFF_NUMBER_YEAR_THAI: u32 = 543;
+const MAX_LEN_TIME_TEXT: usize = 5;  // 11:02
 
 
 impl Parse for ParseAbsolute{
@@ -38,9 +46,9 @@ impl ParseAbsolute{
     fn attach_era(&self, item: &mut Result){
         match self.era{
             EraBasedCalendar::Thai => {
-                // 泰历相对于公历多 543 年因此最小的泰历时间: 1970 + 543
-                if item.time.year() > 2513{
-                    if let Some(di) = item.time.with_year(item.time.year()-543){
+                // 判断是否符合泰历年份
+                if item.time.year() > MIN_NUMBER_YEAR_THAI{
+                    if let Some(di) = item.time.with_year(item.time.year()-DIFF_NUMBER_YEAR_THAI as i32){
                         item.time = di;
                     }
                 }
@@ -63,6 +71,10 @@ impl ParseAbsolute{
                     0 => {self.param.timezone = "utc".to_string();}
                     _ => {self.param.timezone = "other".to_string();}
                 }
+            }
+        }else{
+            if let Some(n) = unitize_timezone_with_text(self.param.timezone.as_str()){
+                self.offset = *n;
             }
         }
         // 特殊时间表达式的处理
@@ -110,7 +122,7 @@ impl ParseAbsolute{
     /// 基于文本固有格式获取偏移量
     fn search_offset_with_text_format(&self, text: &str) -> i32{
         let mut offset = 0;
-        if text.chars().count() < 5{
+        if text.chars().count() < MAX_LEN_TIME_TEXT{
             return offset
         }
         let pure = text.replace(":", "").replace("0", "");
@@ -133,6 +145,7 @@ impl ParseAbsolute{
 
     /// 附加时区属性
     fn attach_timezone(&self, item: &mut Result){
+        item.timezone = self.param.timezone.clone();
         match self.param.timezone.as_str(){
             "" => {
                 // 无时区
@@ -319,7 +332,7 @@ impl ParseAbsolute{
             }
             order.push_str(i.as_str());
         }
-        if day <= 12 && month <= 12 && !force && order == "mmy"{
+        if day <= MAX_NUMBER_MONTH && month <= MAX_NUMBER_MONTH && !force && order == "mmy"{
             if let Some(di) = datetime.with_month(day){
                 if let Some(d) = di.with_day(month){
                     return d
@@ -352,22 +365,22 @@ impl ParseAbsolute{
     /// 严格模式和限制模式的校验
     /// 校验日期数值合法性
     fn validate(&self, datetime: NaiveDateTime) -> bool{
-        if datetime.year() < 1970{
+        if datetime.year() < MIN_NUMBER_YEAR as i32{
             return false
         }
-        if datetime.month() > 12{
+        if datetime.month() > MAX_NUMBER_MONTH{
             return false
         }
-        if  datetime.day() > 31{
+        if  datetime.day() > MAX_NUMBER_DAY{
             return false
         }
-        if datetime.hour() > 24{
+        if datetime.hour() > MAX_NUMBER_HOURS{
             return false
         }
-        if datetime.minute() > 60{
+        if datetime.minute() > MAX_NUMBER_MINUTES{
             return false
         }
-        if datetime.second() > 60{
+        if datetime.second() > MAX_NUMBER_SECONDS{
             return false
         }
         if self.param.strict{
@@ -434,7 +447,7 @@ impl ParseAbsolute{
                     }
                 }
                 // 月份｜类型相同且都为字符串类型的情况下可以强行设定
-                if mark.month.label == DateTimeLabel::Characters && label == DateTimeLabel::Characters && number <= 12{
+                if mark.month.label == DateTimeLabel::Characters && label == DateTimeLabel::Characters && number <= MAX_NUMBER_MONTH{
                     if let Some(d) = datetime.with_month(number){
                         mark.month.status = true;
                         mark.month.label = label;
@@ -443,7 +456,7 @@ impl ParseAbsolute{
                     }
                 }
                 // 月份｜符合条件且月份信息没有锁定的情况下可以设定
-                if number <= 12 && !mark.month.status{
+                if number <= MAX_NUMBER_MONTH && !mark.month.status{
                     if let Some(d) = datetime.with_month(number) {
                         mark.month.status = true;
                         mark.month.label = label;
@@ -452,7 +465,7 @@ impl ParseAbsolute{
                     }
                 }
                 // 天｜符合条件且天信息没有锁定的情况下可以设定
-                if number <= 31 && !mark.day.status{
+                if number <= MAX_NUMBER_DAY && !mark.day.status{
                     if let Some(d) = datetime.with_day(number){
                         mark.day.status = true;
                         mark.day.label = label;
@@ -510,10 +523,10 @@ impl ParseAbsolute{
         */
         match token.text.parse(){
             Ok(number) => {
-                if number > 0 && number <= 31{
+                if number > 0 && number <= MAX_NUMBER_DAY{
                     return (number, DateType::MONTH, false)
                 }
-                if number < 1970 || number > 9999 && !self.param.strict{
+                if number < MIN_NUMBER_YEAR || number > MAX_NUMBER_YEAR && !self.param.strict{
                     return (0, DateType::NONE, false)
                 }
                 let datetime = create_datetime(false, false);

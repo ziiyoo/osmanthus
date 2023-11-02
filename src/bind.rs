@@ -107,7 +107,7 @@ pub struct ParseRelative{
 
 #[derive(Debug, Default)]
 pub struct Param{
-    pub era: String, // 纪元年份
+    // pub era: String, // 纪元年份
     pub timezone: String,  // 时区
     pub strict: bool  // 严格模式
 }

@@ -36,7 +36,7 @@ Find And Automatically Format Time Text From The String.
 
 ### Features
 
-- Fast 
+- Fast
 - High Performance
 - Light
 - Auto TimeZone
@@ -46,37 +46,34 @@ That can be widely used in scenarios such as news sentiment analysis, bidding, a
 
 This document describes the detailed usage of the **osmanthus**, its powerful parsing performance, incredible compatibility, global language and timezone support, online experience, support for other programming languages, test cases, and interesting creative stories.
 
-It supports the parsing and auto-formatting of time text in the following four types.
+It supports the parsing and auto-formatting of time text in the following 4+1 types.
 
 1. [x] absolute｜such as `2013年july18 10:03下午`
 2. [x] relative｜such as `3小时前`、`2 minutes ago`
 3. [x] timestamp｜such as`1685025365`、`1663025361000`
 4. [x] series｜such as`https://example.com/20210315/img/2035.png`
+5. [x] auto mode丨It is actually an algorithm that attempts sequentially in the order of **timestamp**>**relative**>**absolute**>**series** by default. As long as any one of them is recognized, the results will be returned.
 
-### Performance
-<p>
-  <a href="#" target="_blank">
-        <img src="https://img.shields.io/badge/Performence-High-blue">
-  </a>
-  <a href="#" target="_blank">
-        <img src="https://img.shields.io/badge/Compatibility-Powerful-white">
-  </a>
-</p>
+> Tips: When you don't know what type of time text it is, or if you want the osmanthus to recognize it on its own, it is recommended to use auto mode.
 
-A single parsing takes only **microseconds(µs)** and even **nanoseconds(ns)**, and has **excellent compatibility**. 
-
-Even if there are messy noise symbols and irrelevant other text in the input string, it can accurately recognize and format the correct time text.
-
-## Use In Rust
+## Quick Start
 <p>
   <a href="#" target="_blank">
     <img src="https://img.shields.io/badge/Language-Rust-origin">
   </a>
 </p>
 
-The following is a list of several different types of time text parsing examples. For more examples, please refer to the sample code in **benches** 和 **examples**。
+### 1.Install
 
-1、**Absolute Time Text**
+```bash
+> cargo add osmanthus
+```
+
+### 2.Usage
+
+For more examples, please refer to the sample code in **benches** and **examples**。
+#### 2.1 parse absolute time text
+
 ```rust
 use osmanthus::parse_absolute;
 use osmanthus::bind::Param;
@@ -94,12 +91,13 @@ fn main() {
     for sample in samples{
         let r =parse_absolute(sample, Some(Param{strict: true, ..Default::default()}));
         let datetime = r.datetime.local.datetime;
-        println!("series parse result: {:?}, status: {}", datetime.format("%Y-%m-%d %H:%M:%S").to_string(), r.status);
+        println!("absolute time text parse result: {:?}, status: {}", datetime.format("%Y-%m-%d %H:%M:%S").to_string(), r.status);
     }
 }
 ```
 
-2、**Relative Time Text**
+#### 2.2 parse relative time text
+
 ```rust
 use osmanthus::parse_relative;
 use osmanthus::bind::Param;
@@ -115,14 +113,15 @@ fn main() {
     for sample in samples{
         let r =parse_relative(sample, Some(Param{strict: true, ..Default::default()}));
         let datetime = r.datetime.local.datetime;
-        println!("relative parse result: {:?}, status: {}", datetime.format("%Y-%m-%d %H:%M:%S").to_string(), r.status);
+        println!("relative time text parse result: {:?}, status: {}", datetime.format("%Y-%m-%d %H:%M:%S").to_string(), r.status);
     }
 }
 ```
 
-3、**Timestamp Time Text**
+#### 2.3 parse timestamp time text
+
 ```rust
-use osmanthus::parse_timestamp;
+use osmanthus::parse;
 use osmanthus::bind::Param;
 
 fn main() {
@@ -133,14 +132,15 @@ fn main() {
         "你好，中国",   // parse fail
     ];
     for sample in samples{
-        let r =parse_timestamp(sample, Some(Param{strict: true, ..Default::default()}));
+        let r =parse(sample, Some(Param{strict: true, ..Default::default()}));
         let datetime = r.datetime.local.datetime;
-        println!("timestamp parse result: {:?}, status: {}", datetime.format("%Y-%m-%d %H:%M:%S").to_string(), r.status);
+        println!("timestamp time text parse result: {:?}, status: {}", datetime.format("%Y-%m-%d %H:%M:%S").to_string(), r.status);
     }
 }
 ```
 
-4、**Series Time Text**
+#### 2.4 parse Series time text
+
 ```rust
 use osmanthus::parse_series;
 use osmanthus::bind::Param;
@@ -156,10 +156,154 @@ fn main() {
     for sample in samples{
         let r =parse_series(sample, Some(Param{strict: true, ..Default::default()}));
         let datetime = r.datetime.local.datetime;
-        println!("series parse result: {:?}, status: {}", datetime.format("%Y-%m-%d %H:%M:%S").to_string(), r.status);
+        println!("series time text parse result: {:?}, status: {}", datetime.format("%Y-%m-%d %H:%M:%S").to_string(), r.status);
     }
 }
 ```
+
+#### 2.5 auto, parse any time text
+
+```rust
+use osmanthus::parse_series;
+use osmanthus::bind::Param;
+
+fn main() {
+    let samples = vec![
+        "https://www.kingname.info/2022/JULY309/this20350205-is-gnelist/",  // series, 2022-07-30 00:00:00"
+        "3/08/2023 | 11:51",  // absolute, 2023-08-03 11:51:00
+        "发布于 - /n6小時前,",  // relative, 6 hours ago
+        "/202211/W02022110720101102590.jpg", // series, 2022-11-07 00:00:00
+        "1677380340" // timestamp, 2023-02-26 10:59:00
+    ];
+    for sample in samples{
+        let r =parse_series(sample, Some(Param{strict: true, ..Default::default()}));
+        let datetime = r.datetime.local.datetime;
+        println!("time text parse result: {:?}, status: {}", datetime.format("%Y-%m-%d %H:%M:%S").to_string(), r.status);
+    }
+}
+```
+
+
+### 3.Parameters And Result
+
+When use osmanthus, it is possible to pass multiple parameters which will impact the final output. Therefore, it is necessary for you to understand the details of these parameters and the potential effects they may cause.
+
+Due to the need to support multiple time zones worldwide and cater to the usage of different regions, the parsing results have also been handled with compatibility in mind.
+
+#### 3.1 Parameters
+
+When designing osmanthus, I have enforced the use of a unified function signature.
+
+```rust
+fn parse(text: &str, options: Option<Param>) -> Result
+```
+
+Consequently, it is evident that when call any parsing function of osmanthus, both the `text` and `options` parameters need to be passed.
+
+##### None
+
+The `options` filed of type `Option<Param>`, signifies that it is optional. If you don't want to pass anything, you can use `None`.
+
+```rust
+use osmanthus::parse;
+
+fn main() {
+    let res = parse("july,10,2023 15:02:11 PM", None);
+    println!("res: {:?}, status: {}", res.datetime.local.datetime.format("%Y-%m-%d %H:%M:%S").to_string(), res.status)
+}
+// res: "2023-07-10 15:02:11", status: true 
+```
+
+##### Param
+
+The above demonstration showcased the scenario of not passing `Option<Param>`. Now, let's examine when it is necessary to provide this parameter and the specific role of its values. Let's first take a look at the signature of the `Param` structure.
+
+```rust
+pub struct Param{
+    pub timezone: String,  // timezone
+    pub strict: bool  // strict mode
+}
+```
+
+There are 2 fields `timezone` and `strict`，the means：
+
+- timezone: It's timezone，The final output of the calculation is dependent on the set timezone. Assuming a time string corresponds to a `utc` time of `2023-08-12 15:00:00`, but if you set the timezone to `aest`, the parsed `utc` time will be `2023-08-12 05:00:00`, as`utc = aest - 36000 seconds`.
+- strict: It represents the strict mode, which will be further explained below, but here, let's emphasize it. In the context of news and public opinion, there is a common requirement to identify the time of news publication. One important point to note is that the publication time of news cannot be later than the current local time; it must be earlier. For example, if the current time is `2023-10-10 10:00:05`, the detected publication time of the news must be earlier than the current time. It cannot be a few hours or days later. In strict mode, the Osmanthus algorithm will determine whether the time text is greater than the current time. If it is, the algorithm will skip the current suspicious text and proceed to identify the next suspicious text.
+
+
+#### 3.2 Result
+
+To cater to the usage of different regions and time zones, the parsing results have been handled with compatibility in mind, providing multiple time outputs. Let's first take a look at the signatures of several relevant structures in `Result`.
+
+```rust
+pub struct Result{
+    pub status: bool,
+    pub method: String,
+    pub time: NaiveDateTime,
+    pub datetime: DateTime,
+    pub timezone: String,
+}
+
+pub struct DateTime{
+    pub local: Item,
+    pub timezone: Item,
+}
+
+pub struct Item{
+    pub datetime: NaiveDateTime,
+    pub timestamp: i64
+}
+```
+
+In other words, when you use Osmanthus to format the time text within a string, the result you obtain is not just a string or a timestamp number, but rather an **answer that includes more information**.
+
+- **status**：When the value is `true`, it indicates that the algorithm has successfully identified **valid time text** from the given string and formatted it accordingly. Here, valid time text refers to time text that adheres to the year-month-day format. Correct examples include `2023-10-22` and `july,2021,02 15:00`, while incorrect examples include `july,2023 15:00` and `15:06:30`. In other words, the time text string **must** satisfy the **year-month-day** format simultaneously; otherwise, status is false;
+- **timezone**：The timezone here can either be the timezone name passed when invoking the function or the timezone name automatically detected by the program. It can also be an empty string, facilitating further processing in certain scenarios;
+- **method**：The name of the mode, osmanthus will return the name of the mode that it recognizes. For example`absolute`、`relative`、`timestamp`或者`series`；
+- time: Format the input text directly into a time **without attaching** any timezone information;
+- datetime: attaching local timezone and attaching utc timezone
+    - datetime.local
+        - datetime.local.datetime: Time with the local timezone attached, obtaining the current timezone of the operating environment, and converting `time` to the corresponding time in the local timezone
+        - datetime.local.timestamp: timestamp of local
+    - datetime.timezone
+        - datetime.timezone.datetime: Time with the `utc` timezone attached, converting time to the corresponding `time` in the `utc` timezone based on the provided timezone or the timezone recognized at runtime
+        - datetime.timezone.timestamp: timestamp of utc
+
+**It may seem a bit confusing, right?**
+
+You might wonder why not simply return a single time value instead of offering `time`, `datetime.local.datetime`, and `datetime.timezone.datetime` options.
+
+The purpose of providing these options is to prepare for potential future processing. If you only want to format the string into local time, you can simply retrieve the value from `datetime.local.datetime` without concerning yourself with the other 2 types of time."
+
+
+**Let's consider a specific scenario**
+
+- Suppose you work for a global news media company.
+- You are located in New York, USA.
+- However, the servers processing the news data are located in Shanghai, China.
+- The time displayed in the time text is in Australian Eastern Standard Time (AEST).
+- The requirement is to record different times in your database.
+
+
+This cross-timezone or cross-national scenario complicates matters. When the server is in a different timezone from your location, a simple `local time` is not sufficient to meet the requirements. Moreover, the timezone in the text differs from both the server's timezone and your own.
+
+If you only have the `time` value, you would need to calculate the time difference between the New York timezone, Shanghai timezone, and AEST timezone on your own. Each conversion would require at least 2 steps, and then you can store the converted time in the database.
+
+
+Now, osmanthus provides you with the Shanghai timezone and the `utc` timezone, making it easier to convert the time to any desired timezone. With just 1 conversion, you can achieve the desired result.
+
+
+### Performance
+<p>
+  <a href="#" target="_blank">
+        <img src="https://img.shields.io/badge/Performence-High-blue">
+  </a>
+</p>
+
+A single parsing takes only **microseconds(µs)** and even **nanoseconds(ns)**, and has **excellent compatibility**.
+
+Even if there are messy noise symbols and irrelevant other text in the input string, it can accurately recognize and format the correct time text.
+
 
 ## Benchmark
 
@@ -218,13 +362,13 @@ For specific compatibility cases, you can refer to the relevant code in the **be
   </a>
 </p>
 
-Since global support is provided, time zones naturally need to be taken into consideration. 
+Since global support is provided, time zones naturally need to be taken into consideration.
 
 Currently, the osmanthus supports automatic calculation and UTC time conversion for 390 different time zones, including commonly used ones such as CST, MST, BST, HAST, and more.
 
 For a detailed list, please refer to the documentation.
 
-[TIMEZONE LIST](https://github.com/FIMERIC/Fime/blob/main/TIMEZONE.md)
+[TIMEZONE LIST](https://github.com/ziiyoo/osmanthus/blob/main/TIMEZONE.md)
 
 In the time zones listed above, the osmanthus will automatically recognize and calculate the correct time during processing, and provide the time zone and UTC time of the current operating environment in the parsing results, making it convenient for everyone to convert according to their own business and region.
 
@@ -270,7 +414,7 @@ However, due to my language proficiency, some more "localized" expressions may n
 If you provide more samples, we would greatly appreciate it
 
 ## Possible defects
-**The excessive compatibility leads to a decrease in accuracy**, making it prone to misinterpretation. For example, the string`12 batch 2021.05. 13 2023page`  should be correctly parsed as  `2021-05-13 00:00:00`,but parse result maybe `2021-12-05 00:00:00`。
+**The excessive compatibility leads to a decrease in accuracy**, making it prone to misinterpretation. For example, the string`12 batch 2021.05. 13 2023page`  should be correctly parsed as  `2021-05-13 00:00:00`,but parse result maybe `2021-12-05 00:00:00`
 
 However, if other libraries are used for parsing, there is a high possibility of parsing failure or inability to parse any valid temporal text.
 
@@ -332,4 +476,5 @@ We have designed several new processing logics that significantly enhance compat
 * Open sourcing serves as a way to showcase our technical capabilities to the outside world
 
 > working happy ... ...
+
 

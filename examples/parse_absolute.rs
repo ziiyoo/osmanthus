@@ -14,6 +14,6 @@ fn main() {
     for sample in samples{
         let r =parse_absolute(sample, Some(Param{strict: true, ..Default::default()}));
         let datetime = r.datetime.local.datetime;
-        println!("series parse result: {:?}, status: {}", datetime.format("%Y-%m-%d %H:%M:%S").to_string(), r.status);
+        println!("absolute time text parse result: {:?}, status: {}", datetime.format("%Y-%m-%d %H:%M:%S").to_string(), r.status);
     }
 }

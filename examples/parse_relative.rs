@@ -12,6 +12,6 @@ fn main() {
     for sample in samples{
         let r =parse_relative(sample, Some(Param{strict: true, ..Default::default()}));
         let datetime = r.datetime.local.datetime;
-        println!("relative parse result: {:?}, status: {}", datetime.format("%Y-%m-%d %H:%M:%S").to_string(), r.status);
+        println!("relative time text parse result: {:?}, status: {}", datetime.format("%Y-%m-%d %H:%M:%S").to_string(), r.status);
     }
 }

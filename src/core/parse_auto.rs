@@ -25,7 +25,7 @@ pub fn parse_auto(text: &str, options: Option<Param>) -> Result{
 fn clone_options(options: &Option<Param>) -> Option<Param>{
     if let Some(opt) = options{
         let param = Param{
-            era: opt.era.clone(),
+            // era: opt.era.clone(),
             timezone: opt.timezone.clone(),
             strict: opt.strict.clone()
         };

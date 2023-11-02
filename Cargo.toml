@@ -3,12 +3,11 @@ name = "osmanthus"
 version = "0.0.3"
 edition = "2021"
 license = "GPL-3.0-or-later"
-description = "Find And Automatically Format Time Text From The String"
+description = "Find and automatically format time text from the string"
 authors = ["ziiyoo"]
 repository = "https://github.com/ziiyoo/osmanthus"
 keywords = ["format", "time", "format_time", "time_format", "time_text"]
 categories = ["date-and-time", "value-formatting", "parsing"]
-documentation = "https://osmanthus.open.source.seaxii.com"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 

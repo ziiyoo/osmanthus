@@ -3,6 +3,10 @@ use crate::bind::{Param, Result, ParseTimestamp};
 use crate::core::interfaces::{Parse};
 use crate::utils::{is_timestamp, create_timestamp};
 use crate::core::corpus::{get_offset_local_utc, unitize_timezone_with_text};
+
+const LEN_TIMESTAMP_SECOND: usize = 10;
+const LEN_TIMESTAMP_MILLISECOND: usize = 13;
+
 impl Parse for ParseTimestamp{
     fn parse(&mut self, text: &str) -> Result{
         let mut r = self.work(text);
@@ -40,13 +44,13 @@ impl ParseTimestamp{
             return item
         }
         match text.chars().count(){
-            10 => {
+            LEN_TIMESTAMP_SECOND => {
                 if let Some(v) = self.timestamp_convert(timestamp * 1000){
                     item.time = v;
                     item.status = true;
                 }
             }
-            13 => {
+            LEN_TIMESTAMP_MILLISECOND => {
                 if let Some(v) = self.timestamp_convert(timestamp){
                     item.time = v;
                     item.status = true;
@@ -71,6 +75,7 @@ impl ParseTimestamp{
 
     /// 附加时区属性
     fn attach_timezone(&self, item: &mut Result){
+        item.timezone = self.param.timezone.clone();
         match self.param.timezone.as_str(){
             "" => {
                 // 无时区

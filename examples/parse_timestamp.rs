@@ -11,6 +11,6 @@ fn main() {
     for sample in samples{
         let r =parse_timestamp(sample, Some(Param{strict: true, ..Default::default()}));
         let datetime = r.datetime.local.datetime;
-        println!("timestamp parse result: {:?}, status: {}", datetime.format("%Y-%m-%d %H:%M:%S").to_string(), r.status);
+        println!("timestamp time text parse result: {:?}, status: {}", datetime.format("%Y-%m-%d %H:%M:%S").to_string(), r.status);
     }
 }

@@ -6,6 +6,13 @@ use crate::core::interfaces::{Parse};
 use crate::utils::{eliminate_no_break_space, eliminate_symbol_normal, eliminate_symbol_safe, is_number, section_with_space, split_with_numeric, unitize_text, eliminate_empty_item, create_datetime, create_timestamp};
 
 const LEN_SLIDER_SECTION: usize = 8;  // 年月日长度要求一定为8｜例如 20230115 20150630
+const MAX_NUMBER_MONTH: u32 = 12;
+const MAX_NUMBER_DAY: u32 = 31;
+const MAX_NUMBER_HOURS: u32 = 24;
+const MAX_NUMBER_MINUTES: u32 = 60;
+const MAX_NUMBER_SECONDS: u32 = 60;
+const MIN_NUMBER_YEAR: i32 = 1970;
+const MAX_NUMBER_YEAR: i32 = 9999;
 
 
 impl Parse for ParseSeries{
@@ -54,7 +61,6 @@ impl ParseSeries{
         }
         return data
     }
-
     fn assemble(&self, item: &mut Result){
         // 无时区
         item.datetime.local.datetime = item.time;
@@ -84,26 +90,26 @@ impl ParseSeries{
     /// 严格模式和限制模式的校验
     /// 校验日期数值合法性
     fn validate(&self, datetime: NaiveDateTime) -> bool{
-        let mut threshold = 2999;
+        let mut threshold = MAX_NUMBER_YEAR;
         if self.param.strict{
             threshold = create_datetime(false, false).year();
         }
-        if datetime.year() < 1970 || datetime.year() > threshold{
+        if datetime.year() < MIN_NUMBER_YEAR || datetime.year() > threshold{
             return false
         }
-        if datetime.month() > 12{
+        if datetime.month() > MAX_NUMBER_MONTH{
             return false
         }
-        if  datetime.day() > 31{
+        if  datetime.day() > MAX_NUMBER_DAY{
             return false
         }
-        if datetime.hour() > 24{
+        if datetime.hour() > MAX_NUMBER_HOURS{
             return false
         }
-        if datetime.minute() > 60{
+        if datetime.minute() > MAX_NUMBER_MINUTES{
             return false
         }
-        if datetime.second() > 60{
+        if datetime.second() > MAX_NUMBER_SECONDS{
             return false
         }
         return true
